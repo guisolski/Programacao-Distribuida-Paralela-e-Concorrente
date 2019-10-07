@@ -3,6 +3,7 @@ import java.util.concurrent.Semaphore;
 
 public class Main {
     public static int valorInicial = 0,barreira,p,printa;
+    public static long start;
     public static int[][] gerarMatriz(int x, int y){
         Random generator = new Random();
         int[][] n = new int[x][y];
@@ -39,17 +40,36 @@ public class Main {
         Semaphore sBarreira =new Semaphore(0);
         int[][] a = gerarMatriz(m,k);
         int[][] b = gerarMatriz(k,n);
-        int[][] c = new int[m][n];
+        int[][] c = new int[m][n],d = new int[m][n];
         int elementos = (m*n)/p;
         threads[] th = new threads[p];
         for(int i= 0; i< p;i++){
             th[i] = new threads(c,a,b,elementos,valorInicial,sA,sB,sC,sBarreira);
-            valorInicial += elementos;
+            valorInicial += 1;
         }
+        start = System.currentTimeMillis();
+        for (int i=0; i<a.length ; i++) {
+
+            for (int j=0; j<b[0].length ; j++) {
+                int sm = 0;
+                for (int k1=0; k1<b.length; k1++) {
+                    int y = a[i][k1];
+                    int e = b[k1][j];
+                    sm += y*e;
+                }
+                d[i][j] = sm;
+            }
+        }
+        System.out.println("tempo = " + (System.currentTimeMillis()- Main.start));
+        //Main.printaMatriz(d);
+
+
+
+
+        start = System.currentTimeMillis();
         for(int i = 0; i <th.length;i++){
             th[i].start();
         }
-
 
 
 
