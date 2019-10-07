@@ -35,22 +35,23 @@ public class threads extends Thread {
                         this.sB.release();
                         sm += y*e;
                     }
-                    count++;
+
                     this.sC.acquire();
                     this.c[i][j] = sm;
                     this.sC.release();
                 }
+                count++;
             }
 
 
             Main.barreira++;
             if(Main.barreira == Main.p)  sBarreira.release();
             sBarreira.acquire();
-                if(Main.printa == 1){
-                    this.sleep(1000);
-                    Main.printaMatriz(c);
-                    Main.printa = 0;
-                }
+            if(Main.printa == 1){
+                System.out.println("tempo = " + (System.currentTimeMillis()- Main.start));
+                //Main.printaMatriz(c);
+                Main.printa = 0;
+            }
             sBarreira.release();
         } catch (InterruptedException e) {
             e.printStackTrace();
