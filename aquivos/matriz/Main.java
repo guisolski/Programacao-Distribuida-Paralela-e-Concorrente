@@ -1,9 +1,10 @@
+import java.math.BigDecimal;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 
 public class Main {
-    public static int valorInicial = 0,barreira,p,printa;
-    public static long start;
+    public static int valorInicial = 0,barreira,p;
+
     public static int[][] gerarMatriz(int x, int y){
         Random generator = new Random();
         int[][] n = new int[x][y];
@@ -30,10 +31,10 @@ public class Main {
 
     public static void main(String[] args) {
         Runtime runTime = Runtime.getRuntime();
-        printa = 1;
+        boolean oneTime = true;
         p = runTime.availableProcessors();
 
-        int m = 10,k = 10,n = 10;
+        int m = 100,k = 100,n = 100;
         Semaphore sA = new Semaphore(1);
         Semaphore sB = new Semaphore(1);
         Semaphore sC =new Semaphore(1);
@@ -41,28 +42,47 @@ public class Main {
         int[][] a = gerarMatriz(m,k);
         int[][] b = gerarMatriz(k,n);
         int[][] c = new int[m][n],d = new int[m][n];
-        int elementos = (m*n)/p;
+        int elementos = (int) Math.round((double)m/(double) p);
+        int salva = elementos;
+        if(m%p != 0 && m > p) elementos = (m%p);
+        int t = m%p;
+
+
         threads[] th = new threads[p];
+
         for(int i= 0; i< p;i++){
-            th[i] = new threads(c,a,b,elementos,valorInicial,sA,sB,sC,sBarreira);
-            valorInicial += 1;
-        }
-        start = System.currentTimeMillis();
-        for (int i=0; i<a.length ; i++) {
-
-            for (int j=0; j<b[0].length ; j++) {
-                int sm = 0;
-                for (int k1=0; k1<b.length; k1++) {
-                    int y = a[i][k1];
-                    int e = b[k1][j];
-                    sm += y*e;
+            t--;
+            if (t < 0){
+                elementos = salva;
+                if(oneTime){
+                valorInicial += 1;
+                oneTime = false;
                 }
-                d[i][j] = sm;
             }
-        }
-        System.out.println("tempo = " + (System.currentTimeMillis()- Main.start));
-        //Main.printaMatriz(d);
+            th[i] = new threads(c,a,b,elementos,valorInicial,sA,sB,sC,sBarreira);
+            if(t > 0 ){
+                valorInicial += elementos;
+            }
+            else{
+                valorInicial += 1;
+            }
 
+        }
+        long start = System.currentTimeMillis();
+            for(int i = 0; i < a.length;i++){
+                for (int j=0; j<b[0].length ; j++) {
+                    int sm = 0;
+                    for (int k1=0; k1<b.length; k1++) {
+                        int y = a[i][k1];
+                        int e = b[k1][j];
+                        sm += y*e;
+                    }
+                    d[i][j] = sm;
+                }
+            }
+
+        System.out.println("tempo = " + (System.currentTimeMillis()- start));
+        //Main.printaMatriz(d);
 
 
 
@@ -70,7 +90,15 @@ public class Main {
         for(int i = 0; i <th.length;i++){
             th[i].start();
         }
+        try {
+            sBarreira.acquire();
+                System.out.println("tempo = " + (System.currentTimeMillis()- start));
+                //Main.printaMatriz(c);
+            sBarreira.release();
 
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
 
     }
