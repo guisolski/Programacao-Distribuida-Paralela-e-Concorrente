@@ -3,16 +3,15 @@ import java.util.concurrent.Semaphore;
 public class threads extends Thread {
     private int[][] c, a, b;
     private int elementos,valorInicial;
-    private Semaphore sA,sB,sC,sBarreira;
-    public threads(int[][] c1, int[][] a1, int[][] b1, int elementos, int valorInicial, Semaphore sA, Semaphore sB, Semaphore sC, Semaphore sBarreira){
+    private Semaphore cal,sC,sBarreira;
+    public threads(int[][] c1, int[][] a1, int[][] b1, int elementos, int valorInicial, Semaphore cal, Semaphore sC, Semaphore sBarreira){
         this.c = c1;
         this.a = a1;
         this.b = b1;
         this.sBarreira = sBarreira;
         this.elementos = valorInicial+elementos;
         this.valorInicial = valorInicial;
-        this.sA = sA;
-        this.sB = sB;
+        this.cal =cal ;
         this.sC = sC;
 
 
@@ -24,13 +23,11 @@ public class threads extends Thread {
                 for (int j=0; j<this.b[0].length ; j++) {
                     int sm = 0;
                     for (int k=0; k<this.b.length ; k++) {
-                        this.sA.acquire();
-                        int y = this.a[i][k];
-                        this.sA.release();
-                        this.sB.acquire();
-                        int e = this.b[k][j];
-                        this.sB.release();
-                        sm += y*e;
+                        this.cal.acquire();
+                        sm += this.a[i][k]*this.b[k][j];
+                        this.cal.release();
+
+
                     }
                     this.sC.acquire();
                     this.c[i][j] = sm;
@@ -40,7 +37,7 @@ public class threads extends Thread {
 
 
             Main.barreira++;
-            if(Main.barreira ==  Main.p)  sBarreira.release();
+            if(Main.barreira ==  Main.p )  sBarreira.release();
             sBarreira.acquire();
             sBarreira.release();
         } catch (InterruptedException e) {
