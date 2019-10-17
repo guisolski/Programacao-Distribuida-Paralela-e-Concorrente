@@ -34,17 +34,17 @@ public class Main {
         boolean oneTime = true;
         p = runTime.availableProcessors();
 
-        int m = 100,k = 100,n = 100;
-        Semaphore sA = new Semaphore(1);
-        Semaphore sB = new Semaphore(1);
+        int m = 30,k = 30,n = 30;
+        Semaphore cal = new Semaphore(1);
         Semaphore sC =new Semaphore(1);
         Semaphore sBarreira =new Semaphore(0);
         int[][] a = gerarMatriz(m,k);
         int[][] b = gerarMatriz(k,n);
         int[][] c = new int[m][n],d = new int[m][n];
-        int elementos = (int) Math.round((double)m/(double) p);
+        int elementos =  m / p;
+
         int salva = elementos;
-        if(m%p != 0 && m > p) elementos = (m%p);
+        if(m%p != 0 && m > p) elementos = (m%p)-1;
         int t = m%p;
 
 
@@ -55,31 +55,34 @@ public class Main {
             if (t < 0){
                 elementos = salva;
                 if(oneTime){
-                valorInicial += 1;
-                oneTime = false;
+                    valorInicial += elementos;
+                    oneTime = false;
                 }
             }
-            th[i] = new threads(c,a,b,elementos,valorInicial,sA,sB,sC,sBarreira);
+            th[i] = new threads(c,a,b,elementos,valorInicial,cal,sC,sBarreira);
             if(t > 0 ){
                 valorInicial += elementos;
             }
             else{
-                valorInicial += 1;
+                if(!oneTime)
+                    valorInicial += elementos+valorInicial < m-1 && elementos+valorInicial < n-1 ? elementos : 1 ;
+                else
+                    valorInicial += 1;
             }
 
         }
         long start = System.currentTimeMillis();
-            for(int i = 0; i < a.length;i++){
-                for (int j=0; j<b[0].length ; j++) {
-                    int sm = 0;
-                    for (int k1=0; k1<b.length; k1++) {
-                        int y = a[i][k1];
-                        int e = b[k1][j];
-                        sm += y*e;
-                    }
-                    d[i][j] = sm;
+        for(int i = 0; i < a.length;i++){
+            for (int j=0; j<b[0].length ; j++) {
+                int sm = 0;
+                for (int k1=0; k1<b.length; k1++) {
+                    int y = a[i][k1];
+                    int e = b[k1][j];
+                    sm += y*e;
                 }
+                d[i][j] = sm;
             }
+        }
 
         System.out.println("tempo = " + (System.currentTimeMillis()- start));
         //Main.printaMatriz(d);
@@ -87,13 +90,14 @@ public class Main {
 
 
         start = System.currentTimeMillis();
+       // th[5].start();
         for(int i = 0; i <th.length;i++){
             th[i].start();
         }
         try {
             sBarreira.acquire();
-                System.out.println("tempo = " + (System.currentTimeMillis()- start));
-                //Main.printaMatriz(c);
+            System.out.println("tempo = " + (System.currentTimeMillis()- start));
+                Main.printaMatriz(c);
             sBarreira.release();
 
         } catch (InterruptedException e) {
