@@ -1,55 +1,64 @@
+import java.io.*;
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
 
 public class Main {
     public static int valorInicial = 0,barreira,p;
 
-    public static int[][] gerarMatriz(int x, int y){
-        Random generator = new Random();
-        int[][] n = new int[x][y];
-        for(int i = 0; i<x;i++){
-            for(int j = 0; j<y;j++){
-                n[i][j] = generator.nextInt( 5);
-            }
-        }
-        return n;
-    }
-    public static void printaMatriz(int[][] s){
-        for(int[] i : s) {
-            System.out.print("[");
+    private static boolean oneTime = true;
+
+
+    private static int m ,k,n;
+    private static Semaphore cal , sC , sBarreira;
+    private static double[][] a ,b , c , d ;
+    private static int elementos;
+    private  static threads[] th = new threads[p];
+
+
+    public static void printaMatriz(double[][] s,String name) throws IOException {
+        FileWriter arq = new FileWriter(name);
+        PrintWriter gravarArq = new PrintWriter(arq);
+        DecimalFormat decimal = new DecimalFormat( "0.00" );
+        for(double[] i : s) {
+            gravarArq.printf("[");
             for (int a= 0; a<i.length;a++){
                 if(a != i.length-1)
-                    System.out.print(i[a] +", ");
+                    gravarArq.printf(String.valueOf(decimal.format(i[a])).replaceAll(",",".") +", ");
                 else
-                    System.out.print(i[a] +"");
+                    gravarArq.printf(String.valueOf(decimal.format(i[a])).replaceAll(",",".") +"");
             }
-            System.out.println("]");
+            gravarArq.println("]");
         }
+        arq.close();
     }
-
-
-    public static void main(String[] args) {
-        Runtime runTime = Runtime.getRuntime();
-        boolean oneTime = true;
-        p = runTime.availableProcessors();
-
-        int m = 30,k = 30,n = 30;
-        Semaphore cal = new Semaphore(1);
-        Semaphore sC =new Semaphore(1);
-        Semaphore sBarreira =new Semaphore(0);
-        int[][] a = gerarMatriz(m,k);
-        int[][] b = gerarMatriz(k,n);
-        int[][] c = new int[m][n],d = new int[m][n];
-        int elementos =  m / p;
-
+    public static long sequencial(){
+        long start = System.currentTimeMillis();
+        for(int i = 0; i < a.length;i++){
+            for (int j=0; j<b[0].length ; j++) {
+                int sm = 0;
+                for (int k1=0; k1<b.length; k1++) {
+                    sm += a[i][k1]*b[k1][j];
+                }
+                d[i][j] = sm;
+            }
+        }
+        long t = (System.currentTimeMillis()- start);
+        System.out.println("tempo Sequencia= " + t);
+        return  t;
+    }
+    public  static  long paralelo(int num){
+        elementos =  m / p;
         int salva = elementos;
-        if(m%p != 0 && m > p) elementos = (m%p)-1;
+        long tempo = 0;
+        if(m%p != 0 && m > p ) elementos = (int) Math.ceil((double) m / (double) p);
+
         int t = m%p;
 
-
-        threads[] th = new threads[p];
-
+        if(t!=0) System.out.println("Linhas alocadas por processador:  " + elementos + " em " + t + " processadores") ;
+        System.out.println("Linhas alocadas por processador: " + salva + " em " + (p-t) + " processadores");
+        if(t == 0) oneTime = false;
         for(int i= 0; i< p;i++){
             t--;
             if (t < 0){
@@ -64,46 +73,91 @@ public class Main {
                 valorInicial += elementos;
             }
             else{
-                if(!oneTime)
-                    valorInicial += elementos+valorInicial < m-1 && elementos+valorInicial < n-1 ? elementos : 1 ;
-                else
-                    valorInicial += 1;
+                valorInicial += oneTime ? 1 : elementos;
             }
 
         }
         long start = System.currentTimeMillis();
-        for(int i = 0; i < a.length;i++){
-            for (int j=0; j<b[0].length ; j++) {
-                int sm = 0;
-                for (int k1=0; k1<b.length; k1++) {
-                    int y = a[i][k1];
-                    int e = b[k1][j];
-                    sm += y*e;
-                }
-                d[i][j] = sm;
-            }
-        }
-
-        System.out.println("tempo = " + (System.currentTimeMillis()- start));
-        //Main.printaMatriz(d);
-
-
-
-        start = System.currentTimeMillis();
-       // th[5].start();
         for(int i = 0; i <th.length;i++){
             th[i].start();
         }
         try {
             sBarreira.acquire();
-            System.out.println("tempo = " + (System.currentTimeMillis()- start));
-                Main.printaMatriz(c);
+            tempo = (System.currentTimeMillis()- start);
+            System.out.println("tempo Paralelo = " + tempo);
+            Main.printaMatriz(c,"C"+num);
             sBarreira.release();
 
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IOException e) {
             e.printStackTrace();
         }
+        return  tempo;
+    }
+    public  static void criaArquivosIniciais(int v1,int v2, String name) throws IOException {
+        FileWriter arq = new FileWriter(name);
+        PrintWriter gravarArq = new PrintWriter(arq);
+
+        Random generator = new Random();
+        DecimalFormat decimal = new DecimalFormat( "0.00" );
+        for (int i=0; i<v1; i++) {
+            for(int j=0; j<v2; j++){
+                gravarArq.printf(String.valueOf( decimal.format(generator.nextDouble()*100)).replaceAll(",",".")+ " ");
+            }
+            gravarArq.println("");
+        }
+        arq.close();
+    }
+    public static  double[][]  learArquivo(int v1,int v2, String nome) throws IOException {
+        FileReader arq = new FileReader(nome);
+        BufferedReader lerArq = new BufferedReader(arq);
+        double[][] cac = new double[v1][v2];
+        String linha = lerArq.readLine();
+        int i = 0;
+        while (linha != null ) {
+            String[] k = linha.split(" ");
+            for(int j =0; j < k.length; j++){
+                cac[i][j] = Double.parseDouble(k[j]);
+            }
+            i++;
+            linha = lerArq.readLine();
+        }
+        arq.close();
+        return cac;
+    }
+    public static void main(String[] args) throws IOException {
+        Runtime runTime = Runtime.getRuntime();
+        p = runTime.availableProcessors();
+        int[][] valores = {{1000,1000,1000},{2000,2000,2000},{2000,1000,2000},{2000,4000,2000}};
+        int num = 1;
+        for(int[] i : valores) {
+
+            m = i[0];
+            k = i[1];
+            n = i[2];
+            cal = new Semaphore(1);
+            sC = new Semaphore(1);
+            sBarreira = new Semaphore(0);
+
+            criaArquivosIniciais(m, k, "valoresA"+ num);
+            criaArquivosIniciais(k, n, "valoresB"+ num);
+            a = learArquivo(m, k, "valoresA" + num);
+            b = learArquivo(k, n, "valoresB" + num);
+            c = new double[m][n];
+            d = new double[m][n];
+
+            th = new threads[p];
+
+            p = runTime.availableProcessors();
+            System.out.println("Total de processadores: " + p);
+            long tS = sequencial();
+            valorInicial = 0;
+            oneTime = true;
+            barreira = 0;
+            long tP = paralelo(num);
 
 
+            System.out.println("razão = " + (double) tS / tP);
+            num++;
+        }
     }
 }
