@@ -5,13 +5,13 @@ import java.util.Random;
 import java.util.concurrent.Semaphore;
 
 public class Main {
-    public static int valorInicial = 0,barreira,p;
+    public static int valorInicial = 0,p;
 
     private static boolean oneTime = true;
 
 
     private static int m ,k,n;
-    private static Semaphore cal , sC , sBarreira;
+    private static Semaphore cal;
     private static double[][] a ,b , c , d ;
     private static int elementos;
     private  static threads[] th = new threads[p];
@@ -56,7 +56,7 @@ public class Main {
 
         int t = m%p;
 
-        if(t!=0) System.out.println("Linhas alocadas por processador:  " + elementos + " em " + t + " processadores") ;
+        if(t!=0) System.out.println("Linhas alocadas por processador:   " + elementos + " em " + t + " processadores") ;
         System.out.println("Linhas alocadas por processador: " + salva + " em " + (p-t) + " processadores");
         if(t == 0) oneTime = false;
         for(int i= 0; i< p;i++){
@@ -68,7 +68,7 @@ public class Main {
                     oneTime = false;
                 }
             }
-            th[i] = new threads(c,a,b,elementos,valorInicial,cal,sC,sBarreira);
+            th[i] = new threads(c,a,b,elementos,valorInicial,cal);
             if(t > 0 ){
                 valorInicial += elementos;
             }
@@ -82,11 +82,10 @@ public class Main {
             th[i].start();
         }
         try {
-            sBarreira.acquire();
+            cal.acquire();
             tempo = (System.currentTimeMillis()- start);
             System.out.println("tempo Paralelo = " + tempo);
             Main.printaMatriz(c,"C"+num);
-            sBarreira.release();
 
         } catch (InterruptedException | IOException e) {
             e.printStackTrace();
@@ -129,19 +128,19 @@ public class Main {
         p = runTime.availableProcessors();
         int[][] valores = {{1000,1000,1000},{2000,2000,2000},{2000,1000,2000},{2000,4000,2000}};
         int num = 1;
+
         for(int[] i : valores) {
 
             m = i[0];
             k = i[1];
             n = i[2];
-            cal = new Semaphore(1);
-            sC = new Semaphore(1);
-            sBarreira = new Semaphore(0);
 
-            criaArquivosIniciais(m, k, "valoresA"+ num);
-            criaArquivosIniciais(k, n, "valoresB"+ num);
-            a = learArquivo(m, k, "valoresA" + num);
-            b = learArquivo(k, n, "valoresB" + num);
+            cal = new Semaphore(1 - p);
+
+            criaArquivosIniciais(m, k, "A"+ num);
+            criaArquivosIniciais(k, n, "B"+ num);
+            a = learArquivo(m, k, "A" + num);
+            b = learArquivo(k, n, "B" + num);
             c = new double[m][n];
             d = new double[m][n];
 
@@ -152,7 +151,6 @@ public class Main {
             long tS = sequencial();
             valorInicial = 0;
             oneTime = true;
-            barreira = 0;
             long tP = paralelo(num);
 
 
