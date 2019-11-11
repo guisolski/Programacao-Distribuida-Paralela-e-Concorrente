@@ -11,20 +11,21 @@ import java.util.Map;
 
 
 public class Servidor extends Thread {
-    private static Map<String, PrintStream> MAP_CLIENTES;
+    private static HashMap<String, PrintStream> MAP_CLIENTES;
     private Socket conexao;
-    private static List<String> LISTA_DE_NOMES = new ArrayList<>();
-    private static List<String> LISTA_DE_IP = new ArrayList<>();
-
+    private static ArrayList<String> LISTA_DE_NOMES = new ArrayList<>();
+    private static ArrayList<String> LISTA_DE_IP = new ArrayList<>();
+    private static HashMap<String, String> CLIENTE_MENSAGEM;
 
     public static void main(String args[]) {
         try {
             MAP_CLIENTES = new HashMap<String, PrintStream>();
+            CLIENTE_MENSAGEM = new HashMap<String, String>();
             ServerSocket server = new ServerSocket(5555);
             System.out.println("ServidorSocket rodando na porta 5555");
             while (true) {
                 Socket conexao = server.accept();
-                Thread t = new ServeJob(conexao,LISTA_DE_NOMES,LISTA_DE_IP, MAP_CLIENTES);
+                Thread t = new ServeJob(conexao,LISTA_DE_NOMES,LISTA_DE_IP, MAP_CLIENTES,CLIENTE_MENSAGEM);
                 t.start();
             }
         } catch (IOException e) {
